@@ -32,16 +32,27 @@ jobs:
         QUERY_FILES_JSON="[]"
         
         if [ -d "queries" ]; then
-          QUERY_FILES_JSON=$(find queries -name "*.yml" -o -name "*.yaml" | while read file; do
+          # Create temporary file for building JSON array
+          temp_file=$(mktemp)
+          echo "[]" > "$temp_file"
+          
+          for file in queries/*.yml queries/*.yaml; do
             if [ -f "$file" ]; then
               # Remove 'queries/' prefix from filename
               filename=$(basename "$file")
               echo "Processing: $file -> $filename"
-              # Create JSON object with filename and content
-              jq -n --arg filename "$filename" --arg content "$(cat "$file")" \
-                '{"filename": $filename, "content": $content}'
+              
+              # Read file content and escape it properly for JSON
+              content=$(cat "$file" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+              
+              # Create JSON object and add to array
+              jq --arg filename "$filename" --arg content "$content" \
+                '. += [{"filename": $filename, "content": $content}]' "$temp_file" > "${temp_file}.tmp" && mv "${temp_file}.tmp" "$temp_file"
             fi
-          done | jq -s '.')
+          done
+          
+          QUERY_FILES_JSON=$(cat "$temp_file")
+          rm -f "$temp_file"
         fi
         
         # Save to file and output
