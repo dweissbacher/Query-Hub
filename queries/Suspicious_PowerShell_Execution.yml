@@ -40,7 +40,6 @@ cql: |
 # Uses markdown for formatting on the webpage.
 explanation: |
   # CQL Query Breakdown
-
   This query uses CrowdStrike Query Language (CQL) to detect suspicious PowerShell activity:
 
   1. **Event Filtering**: `#event_simpleName=ProcessRollup2 ImageFileName=/\\powershell\\.exe/i`
