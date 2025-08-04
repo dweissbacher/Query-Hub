@@ -45,8 +45,6 @@ cql: |
 # Using the YAML block scalar `|` allows for multi-line strings.
 # Uses markdown for formatting on the webpage.
 explanation: |
-  # CQL Query Breakdown
-
   This query uses CrowdStrike Query Language (CQL) to detect lateral movement activities:
 
   1. **Network Connections**: `#event_simpleName=NetworkConnect`
