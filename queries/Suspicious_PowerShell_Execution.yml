@@ -34,5 +34,22 @@ cql: |
   | join({#event_simpleName=UserIdentity}, field=AuthenticationID, include=[UserName])
   | table([aid, UserName, ParentImageFileName, ImageFileName, CommandLine])
 
+# Explanation of the query.
+# Using the YAML block scalar `|` allows for multi-line strings.
+# Uses markdown for formatting on the webpage.
 explanation: |
-  This query looks for PowerShell executions that include encoded commands, which are often used to obfuscate malicious scripts. It also checks for unusual parent processes that may indicate suspicious activity. The results will show the authentication ID, username, parent process name, PowerShell executable name, and the command line used.
+  # CQL Query Breakdown
+
+  This query uses CrowdStrike Query Language (CQL) to detect suspicious PowerShell activity:
+
+  1. **Event Filtering**: `#event_simpleName=ProcessRollup2 ImageFileName=/\\powershell\\.exe/i`
+     - Searches ProcessRollup2 events for any PowerShell executable (case-insensitive)
+
+  2. **Command Line Analysis**: `CommandLine=/\s-[eE^]{1,2}[nN][cC][oO][dD][eE][mM][aA][nN][dD^]+\s/i`
+     - Uses regex to find encoded command parameters (-EncodedCommand, -enc, etc.)
+
+  3. **User Context**: `join({#event_simpleName=UserIdentity}, field=AuthenticationID, include=[UserName])`
+     - Enriches results with username information
+
+  4. **Output**: `table([aid, UserName, ParentImageFileName, ImageFileName, CommandLine])`
+     - Displays key fields for analysis
