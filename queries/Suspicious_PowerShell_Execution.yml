@@ -5,6 +5,7 @@ name: Suspicious PowerShell Execution
 # MITRE ATT&CK technique IDs
 mitre_ids:
   - T1059.001
+  - T1070.005
 
 # Description of what the query does and its purpose.
 description: This query identifies suspicious PowerShell execution patterns, including encoded commands and unusual parent processes, which could indicate malicious activity.
