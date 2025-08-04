@@ -2,8 +2,9 @@
 # Human-readable name for the query. Will be displayed as the title.
 name: Suspicious PowerShell Execution
 
-# Unique identifier for the query.
-id: T1059.001-suspicious-powershell
+# MITRE ATT&CK technique IDs
+mitre_ids:
+  - T1059.001
 
 # Description of what the query does and its purpose.
 description: This query identifies suspicious PowerShell execution patterns, including encoded commands and unusual parent processes, which could indicate malicious activity.
@@ -23,7 +24,6 @@ tags:
   - PowerShell
   - Execution
   - Endpoint
-  - MITRE T1059.001
 
 # --- Query Content ---
 # The actual CrowdStrike Query Language (CQL) code.
@@ -33,3 +33,6 @@ cql: |
   | CommandLine=/\s-[eE^]{1,2}[nN][cC][oO][dD][eE][mM][aA][nN][dD^]+\s/i
   | join({#event_simpleName=UserIdentity}, field=AuthenticationID, include=[UserName])
   | table([aid, UserName, ParentImageFileName, ImageFileName, CommandLine])
+
+explanation: |
+  This query looks for PowerShell executions that include encoded commands, which are often used to obfuscate malicious scripts. It also checks for unusual parent processes that may indicate suspicious activity. The results will show the authentication ID, username, parent process name, PowerShell executable name, and the command line used.
