@@ -46,5 +46,9 @@
   {
     "name": "fastly-ip-ranges-ipv6.csv",
     "description": "Fastly IPv6 IP ranges"
+  },
+  {
+    "name": "editedname.csv",
+    "description": "editedDescription"
   }
 ]
