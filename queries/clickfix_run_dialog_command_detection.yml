@@ -1,0 +1,73 @@
+name: ClickFix Run Dialog Command Detection
+
+mitre_ids:
+  - T1204
+  - T1189
+  - T1059.003
+
+description: |
+  Detects suspicious commands entered through the Windows Run dialog by
+  monitoring RunMRU registry updates. The query requires both an interpreter
+  or commonly abused system utility and a remote-resource, encoded-command,
+  hidden-window, or inline-execution indicator. This targets ClickFix-style
+  copy-and-paste social engineering while reducing alerts on ordinary Run
+  dialog activity.
+
+author: slapopotamus
+
+log_sources:
+  - Endpoint
+
+cs_required_modules:
+  - Insight
+
+tags:
+  - Hunting
+  - Detection
+
+cql: |
+  // HUNT: ClickFix Run-dialog paste recorded in RunMRU (ACR Stealer initial access)
+  // MITRE: T1204, T1189, T1059.003
+  // CONF: high | FP: low | COST: low | REQUIRES: registry telemetry (RunMRU writes)
+  // FALSE POSITIVES: IT staff pasting legitimate remote-admin one-liners into Run
+  // TUNING: exclude your admin asset group / privileged accounts. Removing the second
+  //         RegStringValue filter widens this to every interpreter typed into Run (noisier hunt).
+  #event_simpleName=/^(RegGenericValueUpdate|AsepValueUpdate|RegSystemConfigValueUpdate)$/
+  | RegObjectName=/RunMRU/i
+  | RegStringValue=/(powershell|cmd|mshta|rundll32|conhost|curl|msiexec|certutil|bitsadmin|python)/i
+  | RegStringValue=/(http|\\\\|-enc|-e |hidden|iex|FromBase64|--headless)/i
+  | table([@timestamp, ComputerName, UserName, RegObjectName, RegValueName, RegStringValue, aid], limit=200)
+
+explanation: |
+  ## Looks for
+
+  The ClickFix delivery vector itself. Windows records every Run-dialog entry
+  in `RunMRU`, so this fires *upstream of execution* — it catches the lure even
+  when the payload fails, is blocked, or is a variant nobody has published yet.
+  This is the Falcon translation of the exact pivot Microsoft's own detection
+  query uses. The second filter is what keeps it clean: a user typing `cmd` is
+  normal, a user pasting an interpreter *plus a remote resource or encoded blob*
+  is not. **FP:** low as written; drop the second filter for a broader, noisier
+  hunt.
+
+  ## Required telemetry
+
+  Requires Falcon endpoint registry-update telemetry with `RegObjectName`,
+  `RegStringValue`, and host or user context. The query uses
+  `RegGenericValueUpdate`, `AsepValueUpdate`, and
+  `RegSystemConfigValueUpdate` events.
+
+  ## False positives and tuning
+
+  Administrators may paste legitimate troubleshooting, deployment, or
+  remote-management commands into the Run dialog. Review the complete
+  `RegStringValue`, the initiating user, and the affected host. After baselining,
+  exclude only specifically approved commands, accounts, or management tools.
+  Do not remove the two-condition requirement.
+
+  ## Limitations
+
+  A RunMRU match shows that the command was entered through the Run dialog;
+  it does not prove that the command executed successfully. ClickFix variants
+  that direct users to a terminal, command prompt, or PowerShell window
+  without using the Run dialog will not be detected by this query.
