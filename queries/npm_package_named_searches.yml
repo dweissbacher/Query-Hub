@@ -1,0 +1,51 @@
+# --- Query Metadata ---
+# Human-readable name for the query. Will be displayed as the title.
+name: NPM Package Named Searches
+
+# MITRE ATT&CK technique IDs
+mitre_ids:
+  - T1204.005
+  - T1195.001
+
+# Description of what the query does and its purpose.
+description: |
+  These queries detect file write events (typically FileWritten or similar) involving specific npm-related package files on endpoints. They are designed for threat hunting, supply chain monitoring, and investigating the installation or dropping of particular Node.js packages.
+
+# The author or team that created the query.
+author: Hem Karlapalem
+
+# The required log sources to run this query successfully in Next-Gen SIEM.
+log_sources:
+  - Endpoint
+
+# The CrowdStrike modules required to run this query.
+cs_required_modules:
+  - Insight
+
+# Tags for filtering and categorization.
+tags:
+  - Hunting
+  - Detection
+
+# --- Query Content ---
+# The actual CrowdStrike Query Language (CQL) code.
+# Using the YAML block scalar `|` allows for multi-line strings.
+cql: |
+  //Single package check
+  #event_simpleName=/written/i TargetFileName=*jscrambler@*
+  | groupBy([@timestamp, event_platform, #event_simpleName, ComputerName, TargetFileName, ParentBaseFileName, GrandParentBaseFileName, CommandLine])
+  
+  //For multiple packages with versions
+  #event_simpleName=/written/i (TargetFileName=/chalk-5\.6\.1/i) OR (TargetFileName=/supports-hyperlinks-4\.1\.1/i) OR (TargetFileName=/chalk-template-1\.1\.1/i) OR (TargetFileName=/slice-ansi-7\.1\.1/i) OR (TargetFileName=/wrap-ansi-9\.0\.1/i) OR (TargetFileName=/has-ansi-6\.0\.1/i) OR (TargetFileName=/strip-ansi-7\.1\.1/i) OR (TargetFileName=/ansi-styles-6\.2\.2/i) OR (TargetFileName=/supports-color-10\.2\.1/i) OR (TargetFileName=/ansi-regex-6\.2\.1/i) OR (TargetFileName=/debug-4\.4\.2/i) OR (TargetFileName=/color-convert-3\.1\.1/i) OR (TargetFileName=/color-name-2\.0\.1/i) OR (TargetFileName=/is-arrayish-0\.3\.3/i) OR (TargetFileName=/color-5\.0\.1/i) OR (TargetFileName=/color-string-2\.1\.1/i) OR (TargetFileName=/simple-swizzle-0\.2\.3/i) OR (TargetFileName=/backslash-0\.2\.1/i)
+  | groupBy([@timestamp, event_platform, #event_simpleName, ComputerName, TargetFileName, ParentBaseFileName, GrandParentBaseFileName, CommandLine])
+
+# Explanation of the query.
+# Using the YAML block scalar `|` allows for multi-line strings.
+# Uses markdown for formatting on the webpage.
+explanation: |
+  These queries detect file write events (typically FileWritten or similar) involving specific npm-related package files on endpoints. They are designed for threat hunting, supply chain monitoring, and investigating the installation or dropping of particular Node.js packages.
+  
+  ## How to adapt:
+  - Replace jscrambler@ with any other scoped or unscoped package pattern.
+  - Add or remove packages in the OR chain as needed.
+  - Add | filter ... clauses for specific users, directories, or time windows.
