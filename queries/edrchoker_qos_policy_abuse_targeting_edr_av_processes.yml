@@ -1,0 +1,57 @@
+# --- Query Metadata ---
+# Human-readable name for the query. Will be displayed as the title.
+name: EDRCHOKER - QoS Policy Abuse Targeting EDR/AV Processes
+
+# MITRE ATT&CK technique IDs
+mitre_ids:
+  - T1562
+  - T1562.001
+
+# Description of what the query does and its purpose.
+description: |
+  This rule detects attempts to impair defensive mechanisms by creating or modifying Quality of Service (QoS) policies that specifically target Endpoint Detection and Response (EDR) or Antivirus (AV) processes. Adversaries may use QoS policies to throttle network traffic for security products, hindering their ability to communicate with central management or cloud services, thus impairing their effectiveness.
+
+# The author or team that created the query.
+author: Aamir Muhammad
+
+# The required log sources to run this query successfully in Next-Gen SIEM.
+log_sources:
+  - Endpoint
+
+# The CrowdStrike modules required to run this query.
+cs_required_modules:
+  - Insight
+
+# Tags for filtering and categorization.
+tags:
+  - Hunting
+  - Monitoring
+  - Detection
+
+# --- Query Content ---
+# The actual CrowdStrike Query Language (CQL) code.
+# Using the YAML block scalar `|` allows for multi-line strings.
+cql: |
+  // // EDRCHOKER - QoS Policy abuse targeting EDR/AV processes (T1562 – Impair Defenses)
+  // // https://www.zerosalarium.com/2026/06/edrchoker-choking-telemetry-stream-block-edr.html
+  // Author: Aamir Muhammad
+  |case{
+  #event_simpleName=/ProcessRollup2|WmiCreateProcess/iF
+  CommandLine=/New-NetQosPolicy|Set-NetQosPolicy/iF
+  CommandLine=/ThrottleRateActionBitsPerSecond|AppPathNameMatchCondition/iF 
+  CommandLine=/(SenseIR\.exe|MsSense\.exe|MsMpEng\.exe|WinDefend\.exe|falcon-sensor\.exe|CSFalconService\.exe|SentinelService\.exe|SentinelAgent\.exe|CortexXDR\.exe|cyvera\.exe|pmsu\.exe|cb\.exe|carbonblack\.exe|edragent\.exe|HarfangLab\.exe|elastic-agent\.exe)/iF
+  | SuspectActivity := format( "QoS Policy Creation via Process Command Line: %s", field=[#event_simpleNam]);
+  #event_simpleName=/RegGenericValueUpdate|AsepValueUpdate|RegSystemConfigValueUpdate|RegistryHiveFileWritten|reg/iF
+  RegObjectName=/\\SOFTWARE\\Policies\\Microsoft\\Windows\\QOS/i
+  RegStringValue=/(SenseIR\.exe|MsSense\.exe|MsMpEng\.exe|WinDefend\.exe|falcon-sensor\.exe|CSFalconService\.exe|SentinelService\.exe|SentinelAgent\.exe|CortexXDR\.exe|cyvera\.exe|pmsu\.exe|cb\.exe|carbonblack\.exe|edragent\.exe|HarfangLab\.exe|elastic-agent\.exe)/i
+  | SuspectActivity := format("QoS Registry Manipulation targeting: %s", field=[RegStringValue])
+  }
+  |groupBy([@timestamp,ComputerName,FileName,ParentBaseFileName,CommandLine,#event_simpleName])
+
+# Explanation of the query.
+# Using the YAML block scalar `|` allows for multi-line strings.
+# Uses markdown for formatting on the webpage.
+explanation: |
+  The rule looks for command-line arguments used to create or set QoS policies (`New-NetQosPolicy`, `Set-NetQosPolicy`) that include throttling parameters (`ThrottleRateActionBitsPerSecond`, `AppPathNameMatchCondition`) and target common EDR/AV process names. It also detects direct registry modifications to QoS policies (`\SOFTWARE\Policies\Microsoft\Windows\QOS`) that include EDR/AV process names.
+  
+  Reference: https://github.com/Aamir-Muhammad/CrowdStrike-Queries/blob/main/Hunting-Queries/edrchoker---qos-policy-abuse-targeting-edrav-processes.cql
