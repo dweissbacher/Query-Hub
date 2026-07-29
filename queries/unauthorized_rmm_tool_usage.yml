@@ -1,0 +1,66 @@
+# --- Query Metadata ---
+# Human-readable name for the query. Will be displayed as the title.
+name: Unauthorized RMM Tool Usage
+
+# MITRE ATT&CK technique IDs
+mitre_ids:
+  - T1219
+
+# Description of what the query does and its purpose.
+description: |
+  Detects the execution of Remote Monitoring & Management (RMM) and remote access tools such as AnyDesk, TeamViewer, ScreenConnect, Atera, Splashtop, RustDesk, and others. Threat actors increasingly abuse legitimate RMM software for initial access, persistence, and hands-on-keyboard activity because it blends in with normal IT operations.
+
+# The author or team that created the query.
+author: ByteRay GmbH
+
+# The required log sources to run this query successfully in Next-Gen SIEM.
+log_sources:
+  - Endpoint
+
+# The CrowdStrike modules required to run this query.
+cs_required_modules:
+  - Insight
+
+# Tags for filtering and categorization.
+tags:
+  - Hunting
+
+# --- Query Content ---
+# The actual CrowdStrike Query Language (CQL) code.
+# Using the YAML block scalar `|` allows for multi-line strings.
+cql: |
+  #event_simpleName=ProcessRollup2 OR #event_simpleName=SyntheticProcessRollup2
+  | ImageFileName=/(\\|\/)(?<FileName>[^\\\/]+)$/
+  | case {
+      FileName=/^anydesk(_custom)?(\.exe)?$/i                                  | RMMTool:="AnyDesk";
+      FileName=/^(teamviewer(_service|_desktop)?|tv_w32|tv_x64)(\.exe)?$/i     | RMMTool:="TeamViewer";
+      FileName=/^(screenconnect|connectwise)[\w.]*(\.exe)?$/i                  | RMMTool:="ScreenConnect / ConnectWise";
+      FileName=/^(ateraagent|atera[\w.]*)(\.exe)?$/i                           | RMMTool:="Atera";
+      FileName=/^(splashtop[\w.]*|srservice|strwinclt|srmanager)(\.exe)?$/i    | RMMTool:="Splashtop";
+      FileName=/^rustdesk(\.exe)?$/i                                           | RMMTool:="RustDesk";
+      FileName=/^supremo(helper|service)?(\.exe)?$/i                           | RMMTool:="Supremo";
+      FileName=/^ammyy[\w.]*(\.exe)?$/i                                        | RMMTool:="Ammyy Admin";
+      FileName=/^ultraviewer[\w.]*(\.exe)?$/i                                  | RMMTool:="UltraViewer";
+      FileName=/^(dwagent|dwagsvc)(\.exe)?$/i                                  | RMMTool:="DWService";
+      FileName=/^meshagent(\.exe)?$/i                                          | RMMTool:="MeshCentral / TacticalRMM";
+      FileName=/^(logmein[\w.]*|lmiguardiansvc)(\.exe)?$/i                     | RMMTool:="LogMeIn";
+      FileName=/^(gotoassist[\w.]*|gotohttp|g2comm|g2host)(\.exe)?$/i          | RMMTool:="GoTo Assist";
+      FileName=/^(rutserv|rfusclient|remoteutilities[\w.]*)(\.exe)?$/i         | RMMTool:="Remote Utilities";
+      FileName=/^radmin[\w.]*(\.exe)?$/i                                       | RMMTool:="Radmin";
+      FileName=/^(nomachine|nxservice|nxplayer|nxnode)(\.exe)?$/i              | RMMTool:="NoMachine";
+      FileName=/^(dwrcs|dameware[\w.]*)(\.exe)?$/i                             | RMMTool:="DameWare";
+      FileName=/^(zohours|zohomeeting|zaservice|za_connect)(\.exe)?$/i         | RMMTool:="Zoho Assist";
+      FileName=/^(ngrok|frpc|frps)(\.exe)?$/i                                  | RMMTool:="Tunneling (ngrok/frp)";
+      * | RMMTool:="none";
+  }
+  | RMMTool != "none"
+  | groupBy([RMMTool, aid, ComputerName, UserName], function=[
+      count(as=Executions),
+      collect([ImageFileName, CommandLine], limit=10),
+      min(@timestamp, as=FirstSeen),
+      max(@timestamp, as=LastSeen)
+    ], limit=10000)
+  | formatTime(format="%F %T %Z", field=FirstSeen, as=FirstSeen)
+  | formatTime(format="%F %T %Z", field=LastSeen, as=LastSeen)
+  | sort(LastSeen, order=desc)
+
