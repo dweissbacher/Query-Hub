@@ -1,0 +1,57 @@
+name: Website Submission → Pull Request
+
+# Triggered by n8n via:  POST https://api.github.com/repos/ByteRay-Labs/Query-Hub/dispatches
+# with body: { "event_type": "query-submission", "client_payload": { ...form data... } }
+on:
+  repository_dispatch:
+    types: [query-submission]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: website-submission-${{ github.event.client_payload.submission_id }}
+  cancel-in-progress: false
+
+jobs:
+  open-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - run: pip install pyyaml
+
+      - name: Build query YAML from submission
+        id: build
+        env:
+          PAYLOAD: ${{ toJson(github.event.client_payload) }}
+        run: python .github/scripts/build_query_from_submission.py
+
+      # Reuse the same rules as validate.yml so a broken submission never opens a PR.
+      - name: Validate generated file
+        run: python .github/scripts/validate_single.py "${{ steps.build.outputs.file }}"
+
+      - name: Open pull request
+        id: pr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          # IMPORTANT: use a PAT / GitHub App token, not GITHUB_TOKEN.
+          # PRs created with GITHUB_TOKEN do NOT trigger the "Validate Queries" pull_request workflow.
+          token: ${{ secrets.SUBMISSION_PR_TOKEN }}
+          branch: submission/${{ steps.build.outputs.slug }}
+          delete-branch: true
+          commit-message: "Add query: ${{ steps.build.outputs.name }}"
+          title: "[Submission] ${{ steps.build.outputs.name }}"
+          labels: community-submission
+          body-path: ${{ steps.build.outputs.pr_body_file }}
+          # Give the contributor credit in the git history (uses noreply address, email is not exposed)
+          author: ${{ steps.build.outputs.git_author }}
+
+      - name: Summary
+        run: |
+          echo "PR: ${{ steps.pr.outputs.pull-request-url }}" >> "$GITHUB_STEP_SUMMARY"
