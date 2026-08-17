@@ -112,7 +112,9 @@ pr_body = f"""Automated PR from a submission on [byteray.com/cql-hub-contribute]
 
 Please review the query logic, test it, and merge or request changes.
 """
-Path("pr_body.md").write_text(pr_body, encoding="utf-8")
+# Write OUTSIDE the checkout so create-pull-request does not commit it
+pr_body_path = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "pr_body.md"
+pr_body_path.write_text(pr_body, encoding="utf-8")
 
 # git author: use GitHub noreply address so no email addresses are committed
 if handle:
@@ -123,7 +125,7 @@ else:
 with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
     fh.write(f"slug={slug}\n")
     fh.write(f"file={out_path}\n")
-    fh.write(f"pr_body_file=pr_body.md\n")
+    fh.write(f"pr_body_file={pr_body_path}\n")
     fh.write(f"git_author={git_author}\n")
     # Escape newlines is not needed for a single-line name, but keep it safe
     fh.write(f"name={name.replace(chr(10), ' ')}\n")
