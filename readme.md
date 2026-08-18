@@ -8,9 +8,9 @@ Every query in `queries/` is published on the CQL Hub website, where you can bro
 
 ## About
 
-- **Community-first**: contributions from security practitioners worldwide, reviewed before they go live.
-- **Free & open**: all queries are open source (MIT) and free to use, share and adapt.
-- **Structured & searchable**: each query is a YAML file with metadata (MITRE ATT&CK IDs, tags, log sources, required Falcon modules), which is what makes filtering on the [CQL Hub](https://www.byteray.com/cql-hub) possible.
+- **Community-first**: Contributions from security practitioners worldwide, reviewed before they go live.
+- **Free & open**: All queries are open source (MIT) and free to use, share and adapt.
+- **Structured & Searchable**: Each query is a YAML file with metadata (MITRE ATT&CK IDs, tags, log sources, required Falcon modules), which is what makes filtering on the [CQL Hub](https://www.byteray.com/cql-hub) possible.
 
 ## How to use
 
@@ -29,7 +29,7 @@ Every query in `queries/` is published on the CQL Hub website, where you can bro
 
 We welcome new queries and improvements to existing ones.
 
-- **Easiest:** submit via the [**Contribute form**](https://www.byteray.com/cql-hub-contribute). Your submission is automatically converted into a correctly formatted query file, validated and opened as a pull request here for review, no git required.
+- **Easiest:** Submit via the [**Contribute form**](https://www.byteray.com/cql-hub-contribute). Your submission is automatically converted into a correctly formatted query file, validated and opened as a pull request here for review, no git required.
 - **Or** fork this repository and open a pull request with a new `queries/<name>.yml`.
 
 Details, the YAML format and the allowed field values are in the [Contributing Guide](contributing.md). Once a PR is merged, the query appears on the CQL Hub.
