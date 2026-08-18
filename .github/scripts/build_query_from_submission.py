@@ -2,10 +2,11 @@
 Turn a website submission (repository_dispatch client_payload) into queries/<slug>.yml
 in the same layout as the existing files, and write GitHub Actions outputs.
 
-Expected client_payload keys (all strings, as sent by n8n):
-  submission_id, name, description, cql, explanation,
-  tags, mitre_ids, log_sources, cs_required_modules,   <- comma separated
-  author, github_handle
+Expected client_payload shape (repository_dispatch allows max 10 top-level keys,
+so everything is nested under one key):
+  { "submission": { submission_id, name, description, cql, explanation,
+                    tags, mitre_ids, log_sources, cs_required_modules,   <- comma separated
+                    author, github_handle } }
 """
 import json
 import os
@@ -15,7 +16,8 @@ from pathlib import Path
 
 import yaml
 
-payload = json.loads(os.environ["PAYLOAD"])
+raw = json.loads(os.environ["PAYLOAD"])
+payload = raw.get("submission", raw)   # accept flat payload too
 g = lambda k: (payload.get(k) or "").strip()
 
 
