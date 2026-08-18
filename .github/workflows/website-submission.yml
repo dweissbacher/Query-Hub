@@ -36,13 +36,21 @@ jobs:
       - name: Validate generated file
         run: python .github/scripts/validate_single.py "${{ steps.build.outputs.file }}"
 
+      # Mint a short-lived installation token for the "CQL Hub Submission Bot" GitHub App.
+      # Using an app token (not GITHUB_TOKEN) makes sure the PR triggers "Validate Queries",
+      # and the PR is authored by the bot rather than a person.
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.SUBMISSION_APP_ID }}
+          private-key: ${{ secrets.SUBMISSION_APP_PRIVATE_KEY }}
+
       - name: Open pull request
         id: pr
         uses: peter-evans/create-pull-request@v7
         with:
-          # IMPORTANT: use a PAT / GitHub App token, not GITHUB_TOKEN.
-          # PRs created with GITHUB_TOKEN do NOT trigger the "Validate Queries" pull_request workflow.
-          token: ${{ secrets.SUBMISSION_PR_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           branch: submission/${{ steps.build.outputs.slug }}
           delete-branch: true
           commit-message: "Add query: ${{ steps.build.outputs.name }}"
